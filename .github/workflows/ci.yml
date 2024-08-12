@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - README.md 
+      - .github/workflows/ci.yml 
+
+permissions:
+  contents: write
+
+jobs:
+  stylua:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check .
+  docs:
+    runs-on: ubuntu-latest
+    name: pandoc to vimdoc
+    steps:
+      - uses: actions/checkout@v2
+      - uses: kdheepak/panvimdoc@main
+        with:
+          vimdoc: ${{ github.event.repository.name }}
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore: auto generate docs"
+          branch: ${{ github.head_ref }}
