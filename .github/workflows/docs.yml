@@ -1,25 +1,16 @@
-name: ci
+name: docs
 
 on:
   push:
     branches: [main]
     paths:
       - README.md 
-      - .github/workflows/ci.yml 
+      - .github/workflows/docs.yml 
 
 permissions:
   contents: write
 
 jobs:
-  stylua:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: JohnnyMorganz/stylua-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-          args: --check .
   docs:
     runs-on: ubuntu-latest
     name: pandoc to vimdoc
