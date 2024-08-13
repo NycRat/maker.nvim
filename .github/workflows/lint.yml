@@ -6,7 +6,7 @@ on:
     paths:
       - lua/**
       - plugin/**
-      - .github/workflows/format.yml
+      - .github/workflows/lint.yml
 
 permissions:
   contents: write
@@ -21,7 +21,3 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
           args: --check .
-      - uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "chore: stylua formatting"
-          branch: ${{ github.head_ref }}
