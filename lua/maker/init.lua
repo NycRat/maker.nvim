@@ -4,8 +4,7 @@ local helper = require("maker.helper")
 
 local opts = {
   commands_file = vim.fn.stdpath("data") .. "/maker_commands.json",
-  default_commands_file = 
-  vim.fn.stdpath("data") .. "/maker_default_commands.json",
+  default_commands_file = vim.fn.stdpath("data") .. "/maker_default_commands.json",
 }
 
 local function create_commands()
