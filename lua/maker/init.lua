@@ -1,90 +1,77 @@
 local M = {}
 
-local command_file = vim.fn.stdpath("data") .. "/maker_commands.json"
+local helper = 
+require("maker.helper")
 
-function M.setup(opts)
+local opts = {
+  commands_file = vim.fn.stdpath("data") .. "/maker_commands.json",
+  default_commands_file = vim.fn.stdpath("data") .. "/maker_default_commands.json",
+}
+
+local function create_commands()
   vim.api.nvim_create_user_command("Set", function()
-    vim.ui.input(
-      { prompt = "Enter command type (build, run, test, etc.): " },
-      function(type)
-        if not type or type == "" then
-          print("Invalid command type.")
+    vim.ui.input({ prompt = "Enter command type (build, run, test, etc.): " }, function(type)
+      if not type or type == "" then
+        print("Invalid command type.")
+        return
+      end
+      vim.ui.input({
+        prompt = "Enter command: ",
+        completion = "shellcmd", -- Enable shell command completion
+      }, function(command)
+        if not command or command == "" then
+          print("Invalid command.")
           return
         end
-        vim.ui.input({
-          prompt = "Enter command: ",
-          completion = "shellcmd", -- Enable shell command completion
-        }, function(command)
-          if not command or command == "" then
-            print("Invalid command.")
-            return
-          end
-          M.set_command(type, command)
-        end)
-      end
-    )
+        M.set_command(type, command)
+      end)
+    end)
   end, {
     desc = "Prompt to set a command of type (build, run, test, etc.) for the current project",
   })
 
   -- Command to execute a command of a specific type
   vim.api.nvim_create_user_command("Run", function(optss)
-    local type = optss.args
-    M.execute_command(type)
+    if optss.args ~= "" then
+      local type = optss.args
+      M.execute_command(type)
+    else
+      local options = helper.read_command_types_list(opts.commands_file)
+
+      vim.ui.select(options, {
+        prompt = "Select a command:",
+      }, function(choice)
+        M.execute_command(string.match(choice, "([^:]+)"))
+      end)
+    end
   end, {
-    nargs = 1,
-    desc = "Execute a command of type (build, run, test, etc.) for the current project",
+    nargs = "?",
+    desc = "Execute a command of type (build, run, test, etc.) for the current project, or select from list of commands if no type is provided",
   })
 end
 
-local function read_commands()
-  local file = io.open(command_file, "r")
-  if not file then
-    return {}
-  end
-  local content = file:read("*a")
-  file:close()
-  local commands, err = vim.json.decode(content)
-  if err then
-    print("Error decoding JSON: " .. err)
-    return {}
-  end
-  return commands or {}
+function M.setup(opts)
+  create_commands()
 end
 
-local function write_commands(commands)
-  local file = io.open(command_file, "w")
-  if not file then
-    print("Error opening file for writing.")
-    return
-  end
-  local content, err = vim.json.encode(commands)
-  if err then
-    print("Error encoding JSON: " .. err)
-    return
-  end
-  file:write(content)
-  file:close()
-end
-
-M.set_command = function(type, command)
+function M.set_command(type, command)
   vim.api.nvim_command("redraw!")
   if not type or type == "" or not command or command == "" then
-    print("Usage: Command <type> <command>")
     return
   end
   local cwd = vim.fn.getcwd()
-  local commands = read_commands()
+
+  local commands = helper.read_commands_json(opts.commands_file)
   commands[cwd] = commands[cwd] or {}
   commands[cwd][type] = command
-  write_commands(commands)
+  helper.write_commands(opts.commands_file, commands)
   print(type .. " command set for this project.")
 end
 
-M.execute_command = function(type)
+function M.execute_command(type)
   vim.api.nvim_command("redraw!")
   local cwd = vim.fn.getcwd()
-  local commands = read_commands()
+  local commands = helper.read_commands_json(opts.commands_file)
   local command = commands[cwd] and commands[cwd][type]
   if command then
     vim.cmd("! " .. command)
